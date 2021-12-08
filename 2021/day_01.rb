@@ -27,8 +27,8 @@ input = File.readlines(file_path).map(&:strip).map(&:to_i)
 
 sonar = Sonar.new *input
 
-part_1_answer = sonar.depth_increase_count
-puts "#{part_1_answer} measurements are larger than the previous measurement."
+answer = sonar.depth_increase_count
+puts "1. #{answer} measurements are larger than the previous measurement."
 
-part_2_answer = sonar.window_sum_increase_count
-puts "#{part_2_answer} sums are larger than the previous sum."
+answer = sonar.window_sum_increase_count
+puts "2. #{answer} sums are larger than the previous sum."
