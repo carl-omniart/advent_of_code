@@ -1,34 +1,57 @@
-class Sonar
-  def initialize *measurements
-    @measurements = measurements
+class InputWrapper
+  DAY = 1
+  
+  def self.load
+    file_name = "day_%02d_input.txt" % DAY
+    self.new File.read(file_name)
   end
   
-  attr_reader :measurements
-  
-  def window_sums
-    measurements.each_cons(3).map &:sum
+  def initialize input
+    @depths = input.strip.split("\n").map(&:strip).map(&:to_i)
   end
   
-  def depth_increase_count
-    increase_count measurements
-  end
-  
-  def window_sum_increase_count
-    increase_count window_sums
-  end
-  
-  def increase_count report
-    report.each_cons(2).count { |a, b| b > a }
-  end
+  attr_reader :depths
 end
 
-file_path = Dir.pwd + "/day_01_input.txt"
-input = File.readlines(file_path).map(&:strip).map(&:to_i)
+class Sonar
+  def initialize *depths
+    @depths = depths
+  end
+  
+  attr_reader :depths
+  
+  def increase_count *measurements
+    measurements.each_cons(2).count { |near, far| far > near }
+  end
 
-sonar = Sonar.new *input
+  def depths_increase_count
+    increase_count *depths
+  end
+  
+  def sliding_window_sums window_width
+    depths.each_cons(window_width).map &:sum
+  end
+  
+  def sliding_window_sums_increase_count window_width
+    increase_count *sliding_window_sums(window_width)
+  end  
+end
 
-answer = sonar.depth_increase_count
-puts "1. #{answer} measurements are larger than the previous measurement."
+def solve_part_one
+  input = InputWrapper.load
+  sonar = Sonar.new *input.depths
+  
+  count = sonar.depths_increase_count
+  puts "1. The number of times that depth measurements increase is #{count}."
+end
 
-answer = sonar.window_sum_increase_count
-puts "2. #{answer} sums are larger than the previous sum."
+def solve_part_two
+  input = InputWrapper.load
+  sonar = Sonar.new *input.depths
+  
+  count = sonar.sliding_window_sums_increase_count 3
+  puts "2. The number of times that sliding window sums increase is #{count}."
+end
+
+solve_part_one
+solve_part_two
