@@ -1,7 +1,7 @@
 require 'minitest/autorun'
 require 'day_04'
 
-class RucksackTest < Minitest::Test
+class SectionAssignmentsTest < Minitest::Test
   INPUT = %Q(
 		2-4,6-8
 		2-3,4-5
