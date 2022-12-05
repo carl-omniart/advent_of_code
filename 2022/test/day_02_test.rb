@@ -1,20 +1,24 @@
 require 'minitest/autorun'
 require 'day_02'
 
-class StrategyGuideTest < Minitest::Test
+class RockPaperScissorsTest < Minitest::Test
   INPUT = %Q(
   	A Y
     B X
     C Z
   )
   
-  def test_calculate_my_scores
-  	guide = StrategyGuide.parse INPUT
-  	assert_equal 15, guide.calculate_my_score
+  def test_score
+  	strategy_guide 	= RockPaperScissors.parse INPUT
+  	score   				= strategy_guide.my_score
+  	expected_score 	= 15
+  	assert_equal expected_score, score
   end
   
-  def test_son_of_calculate_my_scores_
-  	guide = SonOfStrategyGuide.parse INPUT
-  	assert_equal 12, guide.calculate_my_score
+  def test_updated_score
+  	strategy_guide 	= RockPaperScissors.parse INPUT, updated: true
+  	score 					= strategy_guide.my_score
+  	expected_score 	= 12
+  	assert_equal expected_score, score
   end
 end

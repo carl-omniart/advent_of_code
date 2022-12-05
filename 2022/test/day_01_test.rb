@@ -1,7 +1,7 @@
 require 'minitest/autorun'
 require 'day_01'
 
-class FoodListTest < Minitest::Test
+class CalorieCountingTest < Minitest::Test
   INPUT = %Q(
     1000
     2000
@@ -19,19 +19,24 @@ class FoodListTest < Minitest::Test
     10000
   )
   
-  def test_calorie_counts
-  	food_list = FoodList.parse INPUT
-  	expected_sums = [6000, 4000, 11000, 24000, 10000]
-  	assert_equal expected_sums, food_list.calorie_counts
+  def test_calories
+  	elves 				    	= CalorieCounting.parse INPUT
+  	calories          	= elves.map &:total_calories
+  	expected_calories 	= [6000, 4000, 11000, 24000, 10000]
+  	assert_equal expected_calories, calories
   end
   
   def test_max_calories
-  	food_list = FoodList.parse INPUT
-  	assert_equal 24000, food_list.max_calories
+  	elves 							= CalorieCounting.parse INPUT
+  	max_calories  			= elves.map(&:total_calories).max
+  	expected_max  			= 24_000
+  	assert_equal expected_max, max_calories
   end
   
-  def test_max_calories_of_top_n_items
-  	food_list = FoodList.parse INPUT
-  	assert_equal 45000, food_list.max_calories(3)
+  def test_max_three_calories
+  	elves 							= CalorieCounting.parse INPUT
+  	max_3_calories_sum	= elves.map(&:total_calories).max(3).sum
+  	expected_sum				= 45_000
+  	assert_equal expected_sum, max_3_calories_sum
   end
 end

@@ -1,7 +1,7 @@
 require 'minitest/autorun'
 require 'day_04'
 
-class SectionAssignmentsTest < Minitest::Test
+class CampCleanupTest < Minitest::Test
   INPUT = %Q(
 		2-4,6-8
 		2-3,4-5
@@ -12,12 +12,12 @@ class SectionAssignmentsTest < Minitest::Test
   )
   
   def test_assignment_fully_contained
-  	assignments = SectionAssignments.parse INPUT
+  	assignments = CampCleanup.parse INPUT
   	assert_equal 2, assignments.count(&:fully_contained?)
   end
 
   def test_assignment_overlaps
-  	assignments = SectionAssignments.parse INPUT
+  	assignments = CampCleanup.parse INPUT
   	assert_equal 4, assignments.count(&:overlap?)
   end
 end
