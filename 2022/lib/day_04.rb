@@ -28,9 +28,13 @@ module CampCleanup
 		def fully_contained?
 			ranges.permutation(2).any? { |a, b| a.cover? b }
 		end
-	
+		
+		def separate?
+			ranges.combination(2).all? { |a, b| (a.to_a & b.to_a).empty? }
+		end
+		
 		def overlap?
-			ranges.combination(2).any? { |a, b| !(a.to_a & b.to_a).empty? }
+			!separate?
 		end
 	end
 end
