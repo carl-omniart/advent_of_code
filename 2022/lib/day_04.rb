@@ -1,28 +1,36 @@
-class SectionAssignments
-	def self.parse input
-		range_pairs = input.strip.split("\n").map { |pair| parse_pair pair.strip }
-		range_pairs.map { |ranges| self.new *ranges }
+module CampCleanup
+	class << self
+		def parse string
+			range_pairs = stripped_lines(string).map { |line| parse_range_pair line }
+			range_pairs.map { |range_pair| SectionAssignments.new *range_pair }
+		end
+		
+		def stripped_lines string
+			string.strip.split("\n").map { |line| line.strip }
+		end
+		
+		def parse_range_pair line
+			line.split(",").map { |string| parse_range string }
+		end
+		
+		def parse_range string
+			Range.new *string.split("-").map(&:to_i)
+		end
 	end
 	
-	def self.parse_pair string_pair
-		string_pair.split(",").map { |range| parse_range range }
-	end
+	class SectionAssignments
+		def initialize *ranges
+			@ranges = ranges
+		end
 	
-	def self.parse_range string_range
-		Range.new *string_range.split("-").map(&:to_i)
-	end
+		attr_reader :ranges
 	
-	def initialize *ranges
-		@ranges = ranges
-	end
+		def fully_contained?
+			ranges.permutation(2).any? { |a, b| a.cover? b }
+		end
 	
-	attr_reader :ranges
-	
-	def fully_contained?
-		ranges.permutation(2).any? { |a, b| a.cover? b }
-	end
-	
-	def overlap?
-		ranges.combination(2).any? { |a, b| !(a.to_a & b.to_a).empty? }
+		def overlap?
+			ranges.combination(2).any? { |a, b| !(a.to_a & b.to_a).empty? }
+		end
 	end
 end

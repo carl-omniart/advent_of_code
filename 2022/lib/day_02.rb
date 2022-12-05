@@ -1,129 +1,193 @@
-class Game
-	WHAT_DEFEATS = {
-		rock:			:paper,
-		paper:		:scissors,
-		scissors:	:rock
-	}
-	
-	POINTS = {
-		rock: 		1,
-		paper: 		2,
-		scissors: 3,
-		lose:			0,
-		draw:			3,
-		win:			6
-	}
-	
-	def initialize player_1, player_2
-		@players = [player_1, player_2]
-		@scores  = [0, 0]
-	end
-	
-	attr_reader :players	
-	attr_reader :scores
-	
-	def play!
-		shapes = players.map(&:shoot!).tap { |shapes| score_shapes shapes }
-		
-		compare(*shapes).tap { |outcome| score_outcome outcome }
-	end
-			
-	private
-	
-	def compare shape_1, shape_2
-		return [:lose,  :win] if WHAT_DEFEATS[shape_1] == shape_2
-		return [:draw, :draw] if shape_1 == shape_2
-		return [ :win, :lose] if WHAT_DEFEATS[shape_2] == shape_1
-		raise StandardError, "What game are you playing?"
-	end
-	
-	def score_shapes shapes
-		add_points shapes.map { |shape| POINTS[shape] }
-	end
-	
-	def score_outcome outcome
-		add_points outcome.map { |result| POINTS[result] }
-	end
-	
-	def add_points points
-		@scores = scores.zip(points).map &:sum
-	end
-end
-
-class AutoPlayer
-	def initialize play_list
-		@play_list = play_list
-	end
-	
-	attr_reader :play_list
-	
-	def shoot!
-		play_list.shift
-	end
-end
-
-class StrategyGuide
-	@code = {
-		"A" => :rock,
-		"B" => :paper,
-		"C" => :scissors,
-		"X" => :rock,
-		"Y" => :paper,
-		"Z" => :scissors
-	}
-	
-  class << self
-  	attr_reader :code
-
-		def parse input
-			guide = input.strip.split("\n").map { |line| decrypt line.strip.split(" ") }
-		
-			self.new guide
-		end
-	
-		def decrypt line
-			line.map { |char| code[char] }
-		end
-  end
-	
-	def initialize guide
-		@players = guide.transpose.map { |play_list| AutoPlayer.new play_list }
-	end
-	
-	attr_reader :players
-	
-	def calculate_scores
-		game = Game.new *players
-		game.play! until players.first.play_list.empty?
-		game.scores
-	end
-	
-	def calculate_my_score
-		calculate_scores.last
-	end
-end
-
-class SonOfStrategyGuide < StrategyGuide
-	@code = {
-		"A" => :rock,
-		"B" => :paper,
-		"C" => :scissors,
-		"X" => :lose,
-		"Y" => :draw,
-		"Z" => :win
-	}		
-
+module RockPaperScissors
 	class << self
-		def decrypt line
-			line = super line
+		def parse string, updated: false
+			predictions = stripped_lines(string).map { |line| line.split " " }
+			guide = updated ? UpdatedStrategyGuide : StrategyGuide
+			guide.new *predictions
+		end
 		
-			shapes    = [:rock, :paper, :scissors]
-			rotate_by = { lose: 2, draw: 0, win: 1 }
+		def stripped_lines string
+			string.strip.split("\n").map { |line| line.strip }
+		end
+	end
+	
+	class Game
+		@what_defeats_what = {
+			rock:			:scissors,
+			paper:		:rock,
+			scissors:	:paper
+		}
+	
+		@points = {
+			rock: 		1,
+			paper: 		2,
+			scissors: 3,
+			loss:			0,
+			draw:			3,
+			win:			6
+		}
+	
+		class << self
+			attr_accessor :what_defeats_what
+			attr_accessor :points
 			
-			n       = shapes.index(line.first) + rotate_by[line.last]
-			line[1] = shapes.rotate(n).first
+			def what_is_defeated_by_what
+				what_defeats_what.invert
+			end
+			
+			def outcome shape_1, shape_2
+				return [ :win, :loss] if what_defeats_what[shape_1] == shape_2
+				return [:draw, :draw] if shape_1 == shape_2
+				return [:loss,  :win] if what_is_defeated_by_what[shape_1] == shape_2
+				raise StandardError, "What game are you playing?"
+			end
+			
+			def score shape_or_outcome
+				points[shape_or_outcome]
+			end
+		end
+	
+		def initialize player_1, player_2
+			@players = [player_1, player_2]
+			@rounds  = []
+		end
 		
-			line
+		attr_reader :players	
+		attr_reader :rounds
+		
+		def play_round!
+			rounds << Round.new(self)
+			self
+		end
+		
+		def outcomes
+			rounds.map &:outcome
+		end
+		
+		def scores
+			rounds.map &:score
+		end
+					
+		def score
+			scores.transpose.map &:sum
+		end
+	end
+
+	class Round
+		def initialize game
+			@game    = game
+			@shapes  = players.map &:shoot!
+		end
+		
+		attr_reader :game
+		attr_reader :shapes
+		
+		def players
+			game.players
+		end
+		
+		def outcome
+			game.class.outcome *shapes
+		end
+		
+		def shapes_score
+			shapes.map { |shape| game.class.score shape }
+		end
+		
+		def outcome_score
+			outcome.map { |result| game.class.score result }
+		end
+		
+		def score
+			shapes_score.zip(outcome_score).map &:sum
+		end
+	end
+
+	class Player
+		def initialize *shapes
+			@shapes = shapes
+		end
+	
+		attr_reader :shapes
+	
+		def shoot!
+			shapes.shift
+		end
+		
+		def done?
+			shapes.empty?
+		end
+	end
+
+	class StrategyGuide
+		@code = {
+			"A" => :rock,
+			"B" => :paper,
+			"C" => :scissors,
+			"X" => :rock,
+			"Y" => :paper,
+			"Z" => :scissors
+		}
+	
+		class << self
+			attr_reader :code
+			
+			def decrypt *predictions
+				predictions.map { |round| round.map { |player| code[player] } }
+			end	
+		end
+		
+		def initialize *predictions
+			@predictions = predictions
+		end
+		
+		attr_reader :predictions
+		
+		def decrypted_predictions
+			self.class.decrypt *predictions
+		end
+		
+		def score
+			game = Game.new *players
+			game.play_round! until game.players.first.done?
+			game.score
+		end
+		
+		def my_score
+			score.last
+		end			
+		
+		private
+		
+		def players
+			decrypted_predictions.transpose.map { |shapes| Player.new *shapes }
+		end
+	end
+	
+	class UpdatedStrategyGuide < StrategyGuide
+		@code = {
+			"A" => :rock,
+			"B" => :paper,
+			"C" => :scissors,
+			"X" => :loss,
+			"Y" => :draw,
+			"Z" => :win
+		}
+		
+		class << self
+			def decrypt *predictions
+				super(*predictions).map do |shape_1, result|
+					shape_2 = case result
+										when :win
+											Game.what_is_defeated_by_what[shape_1]
+										when :draw
+											shape_1
+										when :loss
+											Game.what_defeats_what[shape_1]
+										end
+					[shape_1, shape_2]
+				end
+			end
 		end
 	end
 end
