@@ -13,17 +13,17 @@ module RockPaperScissors
   
   class Game
     @what_defeats_what = {
-      rock:      :scissors,
+      rock:     :scissors,
       paper:    :rock,
-      scissors:  :paper
+      scissors: :paper
     }
   
     @points = {
       rock:     1,
-      paper:     2,
+      paper:    2,
       scissors: 3,
-      loss:      0,
-      draw:      3,
+      loss:     0,
+      draw:     3,
       win:      6
     }
   
