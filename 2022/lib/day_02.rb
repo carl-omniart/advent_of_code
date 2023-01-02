@@ -1,24 +1,12 @@
 module RockPaperScissors
-  class << self
-    def parse string, updated: false
-      predictions = stripped_lines(string).map { |line| line.split " " }
-      guide = updated ? UpdatedStrategyGuide : StrategyGuide
-      guide.new *predictions
-    end
-    
-    def stripped_lines string
-      string.strip.split("\n").map { |line| line.strip }
-    end
-  end
-  
   class Game
-    @what_defeats_what = {
+    WHAT_DEFEATS_WHAT = {
       rock:     :scissors,
       paper:    :rock,
       scissors: :paper
     }
   
-    @points = {
+    POINTS = {
       rock:     1,
       paper:    2,
       scissors: 3,
@@ -27,36 +15,33 @@ module RockPaperScissors
       win:      6
     }
   
-    class << self
-      attr_accessor :what_defeats_what
-      attr_accessor :points
-      
-      def what_is_defeated_by_what
-        what_defeats_what.invert
-      end
-      
-      def outcome shape_1, shape_2
-        return [ :win, :loss] if what_defeats_what[shape_1] == shape_2
-        return [:draw, :draw] if shape_1 == shape_2
-        return [:loss,  :win] if what_is_defeated_by_what[shape_1] == shape_2
-        raise StandardError, "What game are you playing?"
-      end
-      
-      def score shape_or_outcome
-        points[shape_or_outcome]
-      end
-    end
-  
     def initialize player_1, player_2
-      @players = [player_1, player_2]
-      @rounds  = []
+      self.players = [player_1, player_2]
+      self.rounds  = []
     end
     
-    attr_reader :players  
-    attr_reader :rounds
+    attr_accessor :players  
+    attr_accessor :rounds
+    
+    def shapes
+      WHAT_DEFEATS_WHAT.keys
+    end
+    
+    def get_outcome shape_1, shape_2
+      return [ :win, :loss] if WHAT_DEFEATS_WHAT[shape_1] == shape_2
+      return [:draw, :draw] if shape_1 == shape_2
+      return [:loss,  :win] if WHAT_DEFEATS_WHAT[shape_2] == shape_1
+      raise StandardError, "What game are you playing?"
+    end
+    
+    def get_score shape_or_outcome
+      POINTS[shape_or_outcome]
+    end
     
     def play_round!
-      rounds << Round.new(self)
+      round = Round.new self
+      round.play!
+      rounds << round
       self
     end
     
@@ -75,52 +60,59 @@ module RockPaperScissors
 
   class Round
     def initialize game
-      @game    = game
-      @shapes  = players.map &:shoot!
+      self.game = game
     end
     
-    attr_reader :game
-    attr_reader :shapes
+    attr_accessor :game
+    attr_accessor :shapes
     
     def players
       game.players
     end
+
+    attr_accessor :outcome
+    attr_accessor :score
+    
+    def play!
+      self.shapes = players.map { |player| player.choose! }
+      self
+    end
     
     def outcome
-      game.class.outcome *shapes
-    end
-    
-    def shapes_score
-      shapes.map { |shape| game.class.score shape }
-    end
-    
-    def outcome_score
-      outcome.map { |result| game.class.score result }
+      game.get_outcome *shapes
     end
     
     def score
-      shapes_score.zip(outcome_score).map &:sum
+      shape_score.zip(outcome_score).map &:sum
+    end
+    
+    def shape_score
+      shapes.map { |shape| game.get_score shape }
+    end
+    
+    def outcome_score
+      outcome.map { |result| game.get_score result }
     end
   end
-
-  class Player
-    def initialize *shapes
-      @shapes = shapes
+  
+  class ProgrammedPlayer
+    def initialize *choices
+      self.choices = choices
     end
-  
-    attr_reader :shapes
-  
-    def shoot!
-      shapes.shift
+    
+    attr_accessor :choices
+    
+    def choose!
+      choices.shift
     end
     
     def done?
-      shapes.empty?
+      choices.empty?
     end
   end
 
   class StrategyGuide
-    @code = {
+    CODE = {
       "A" => :rock,
       "B" => :paper,
       "C" => :scissors,
@@ -130,42 +122,35 @@ module RockPaperScissors
     }
   
     class << self
-      attr_reader :code
-      
-      def decrypt *predictions
-        predictions.map { |round| round.map { |player| code[player] } }
-      end  
+      def parse string
+        lines       = string.strip.split("\n").map &:strip
+        predictions = lines.map { |line| line.split " " }
+        self.new *predictions
+      end
     end
     
     def initialize *predictions
-      @predictions = predictions
+      self.predictions = predictions.map { |prediction| decrypt prediction }
     end
     
-    attr_reader :predictions
+    attr_accessor :predictions
     
-    def decrypted_predictions
-      self.class.decrypt *predictions
+    def decrypt prediction
+      prediction.map { |char| CODE[char] }
     end
     
-    def score
-      game = Game.new *players
-      game.play_round! until game.players.first.done?
-      game.score
+    def programmed_players
+      predictions.transpose.map { |choices| ProgrammedPlayer.new *choices }
     end
     
-    def my_score
-      score.last
-    end      
-    
-    private
-    
-    def players
-      decrypted_predictions.transpose.map { |shapes| Player.new *shapes }
+    def simulate_game
+      you, me = programmed_players
+      Game.new(you, me).tap { |game| game.play_round! until you.done? }
     end
   end
   
   class UpdatedStrategyGuide < StrategyGuide
-    @code = {
+    CODE = {
       "A" => :rock,
       "B" => :paper,
       "C" => :scissors,
@@ -174,20 +159,17 @@ module RockPaperScissors
       "Z" => :win
     }
     
-    class << self
-      def decrypt *predictions
-        super(*predictions).map do |shape_1, result|
-          shape_2 = case result
-                    when :win
-                      Game.what_is_defeated_by_what[shape_1]
-                    when :draw
-                      shape_1
-                    when :loss
-                      Game.what_defeats_what[shape_1]
-                    end
-          [shape_1, shape_2]
-        end
-      end
+    def decrypt prediction
+      your_shape, result = prediction.map { |char| CODE[char] }
+      my_shape           = case result
+                           when :win
+                            Game::WHAT_DEFEATS_WHAT.invert[your_shape]
+                           when :draw
+                            your_shape
+                           when :loss
+                            Game::WHAT_DEFEATS_WHAT[your_shape]
+                           end
+      [your_shape, my_shape]
     end
   end
 end
