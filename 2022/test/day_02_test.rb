@@ -9,15 +9,15 @@ class RockPaperScissorsTest < Minitest::Test
   )
   
   def test_score
-    strategy_guide = RockPaperScissors.parse INPUT
-    score          = strategy_guide.my_score
+    guide          = RockPaperScissors::StrategyGuide.parse INPUT
+    score          = guide.simulate_game.score.last
     expected_score = 15
     assert_equal expected_score, score
   end
   
   def test_updated_score
-    strategy_guide = RockPaperScissors.parse INPUT, updated: true
-    score          = strategy_guide.my_score
+    guide          = RockPaperScissors::UpdatedStrategyGuide.parse INPUT
+    score          = guide.simulate_game.score.last
     expected_score = 12
     assert_equal expected_score, score
   end
