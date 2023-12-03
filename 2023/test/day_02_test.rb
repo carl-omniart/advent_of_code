@@ -19,8 +19,8 @@ class CubeConundrumTest < Minitest::Test
   end
   
   def test_fewest_cubes
-    games = CubeConundrum.parse_games INPUT
-    bags  = games.map { |game| CubeConundrum::Bag.new **game.maxes }
+    games        = CubeConundrum.parse_games INPUT
+    bags         = games.map { |game| CubeConundrum::Bag.new **game.maxes }
     expected_sum = 2286
     assert_equal expected_sum, bags.map(&:power).sum
   end
