@@ -15,6 +15,6 @@ def solution_to_part_two
   bags.map(&:power).sum
 end
 
-puts "Day 1: Cube Conundrum"
+puts "Day 2: Cube Conundrum"
 puts "  1. #{solution_to_part_one}"
 puts "  2. #{solution_to_part_two}"
