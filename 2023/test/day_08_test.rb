@@ -42,18 +42,18 @@ class HauntedWastelandTest < Minitest::Test
   def test_steps_to_zzz_1
     map = HauntedWasteland::Map.parse input(1)
     expected_steps = 2
-    assert_equal expected_steps, map.steps_to_zzz
+    assert_equal expected_steps, map.steps_between(:AAA, :ZZZ)
   end
   
   def test_steps_to_zzz_2
     map = HauntedWasteland::Map.parse input(2)
     expected_steps = 6
-    assert_equal expected_steps, map.steps_to_zzz
+    assert_equal expected_steps, map.steps_between(:AAA, :ZZZ)
   end
   
-  def test_parallel_steps
+  def test_ghost_steps
     map = HauntedWasteland::Map.parse input(3)
     expected_steps = 6
-    assert_equal expected_steps, map.ghost_steps_to_z
+    assert_equal expected_steps, map.ghost_syzygy
   end
 end
