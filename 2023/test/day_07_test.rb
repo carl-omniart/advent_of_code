@@ -19,7 +19,6 @@ class CamelCardsTest < Minitest::Test
   def test_total_winnings_with_jokers
     game = CamelCards::GameWithJokers.parse INPUT
     expected_winnings = 5905
-    p game.hands.sort.map { |hand| hand.bid }
     assert_equal expected_winnings, game.winnings.sum
   end
 end
