@@ -1,0 +1,145 @@
+require 'open-uri'
+
+%w(temp).each do |lib|
+  $LOAD_PATH.unshift(Dir.getwd) unless $LOAD_PATH.include?(Dir.getwd)
+end
+
+def year
+  File.basename(Dir.getwd).to_i
+end
+
+def folders
+  Dir.each_child('.').select do |child|
+    File.directory?(child) && File.basename(child) =~ /^day_\d\d$/
+  end
+end
+
+def days
+  folders.map { |folder| File.basename(folder).gsub('day_', '').to_i }.sort
+end
+
+def most_recent_day
+  days.max
+end
+
+def day00 day
+  "day_%02d" % day
+end
+
+def folder day
+  day00(day) + "/"
+end
+
+def solution_file day
+  folder(day) + "solution.rb"
+end
+
+def test_file day
+  folder(day) + "test.rb"
+end
+
+def input_file day
+  folder(day) + "input.txt"
+end
+
+def module_name day
+  day00(day).gsub('_', '').capitalize.to_sym
+end
+
+def solution_module day
+  Object.const_get module_name(day)
+end
+
+def test day
+  require test_file(day)
+end
+
+def solve day
+  require solution_file(day)
+  
+  input = File.read input_file(day)
+
+  solution_module(day).tap do |mod|
+    puts "Day #{mod.day}: #{mod.title}"
+    puts "  1. #{mod.solve_part_one(input)}"
+    puts "  2. #{mod.solve_part_two(input)}"
+  end
+end
+
+task :test, [:day] do |task, args|
+  args.with_defaults :day => most_recent_day
+  day = args[:day].to_i
+  test day
+end
+
+task :test_all do |task|
+  days.each { |day| test day }
+end
+
+task :solve, [:day] do |task, args|
+  args.with_defaults :day => most_recent_day
+  day = args[:day].to_i
+  solve day
+end
+
+task :solve_all do |task|
+  days.each { |day| solve day }
+end
+
+task :all do |task|
+  days.each { |day| test day; solve day }
+end
+
+task :new do |task|
+  day = (most_recent_day || 0) + 1
+
+  Dir.mkdir folder(day)
+  
+  File.open(solution_file(day), "w") do |f|
+    f.puts "module #{module_name(day)}"
+    f.puts "  class << self"
+    f.puts "    def title"
+    f.puts "      '___'"
+    f.puts "    end"
+    f.puts "    "
+    f.puts "    def day"
+    f.puts "      name.gsub('Day', '').to_i"
+    f.puts "    end"
+    f.puts "    "
+    f.puts "    def solve_part_one input"
+    f.puts "      nil"
+    f.puts "    end"
+    f.puts "    "
+    f.puts "    def solve_part_two input"
+    f.puts "      nil"
+    f.puts "    end"
+    f.puts "  end"
+    f.puts "  "
+    f.puts "end"
+  end
+  
+  File.open(test_file(day), "w") do |f|
+    f.puts "require 'minitest/autorun'"
+    f.puts "require '#{solution_file(day).gsub('.rb', '')}'"
+    f.puts ""
+    f.puts "class #{module_name(day)}Test < Minitest::Test"
+    f.puts "  INPUT = %Q("
+    f.puts "  "
+    f.puts "  )"
+    f.puts "  "
+    f.puts "  def input"
+    f.puts '    INPUT.strip.split("\n").map(&:strip).join "\n"'
+    f.puts "  end"
+    f.puts "  "
+    f.puts "  def test_part_one"
+    f.puts "    assert_equal ___, #{module_name(day)}.solve_part_one(input)"
+    f.puts "  end"
+    f.puts "  "
+    f.puts "#   def test_part_two"
+    f.puts "#     assert_equal ___, #{module_name(day)}.solve_part_two(input)"
+    f.puts "#   end"
+    f.puts "end"
+  end
+end
+
+task :default => :all
